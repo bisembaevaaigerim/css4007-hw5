@@ -1,163 +1,110 @@
-# HW5 — Build a university IT helpdesk with LangGraph
+# CSS-4007 HW5 — University IT helpdesk with LangGraph
 
-**CSS-4007 · Artificial Intelligence**  
-**Due:** 8 November 2026, 23:59 (UTC+5)
+A terminal helpdesk assistant (fictional data) built in stages with LangGraph:
 
-## Start from this repository
+1. **Part 1** — a graph with no LLM (`helpdesk/part1.py`): `read_request` → conditional edge → `wifi_help` / `password_help` / `other_help` (and `clarify_problem` in the changed graph).
+2. **Part 2** — a model that chooses tools (`helpdesk/agent.py`, `helpdesk/tools.py`): `find_instructions`, `check_service_status`, `prepare_ticket` (+ `save_user_preference`), with a loop limit.
+3. **Part 3** — memory: conversation memory (LangGraph SQLite checkpointer, per `thread_id`) and user memory (SQLite, per `user_id`).
+4. **Part 4** — tests, pinned dependencies, GitHub Actions CI.
 
-1. Fork [ardakshalkar/css4007-hw5](https://github.com/ardakshalkar/css4007-hw5) and keep your fork public, as for the earlier homeworks.
-2. Clone your fork and work there. Do not open a pull request to the starter repository.
-3. Read [SCENARIOS.md](SCENARIOS.md) to see the example conversations and what the finished application should do.
-4. Read [data/README.md](data/README.md), then inspect the supplied JSON files. Use these fixtures for your demonstrations.
-5. Write your code and fill in SUBMISSION.md as you complete the parts. The starter supplies the task and data; you implement the graph, tools, memory and tests.
+The original assignment text is in [ASSIGNMENT.md](ASSIGNMENT.md). My answers and results are in [SUBMISSION.md](SUBMISSION.md).
 
-### Set up your environment
+## Setup
 
-Create a virtual environment with python -m venv .venv. Activate it with .venv\Scripts\Activate.ps1 in PowerShell, or source .venv/bin/activate on macOS/Linux. Then run python -m pip install -r requirements.txt.
+Python version used: **3.11.9** (Windows). CI uses Python 3.11.
 
-Part 1 needs no API key. For the model parts, copy .env.example to .env and set your key and an available tool-capable model identifier. The dependency list includes the OpenAI adapter; if you choose another provider, replace it with the appropriate adapter and document your setup. The SQLite checkpoint package is supplied for a local storage option; explain your final storage choice.
-
-The starter dependencies are not a tested, pinned environment for a completed application. Pin the versions you actually use once your code runs, and record your Python version. No application entry point is supplied: include your own exact run commands in your README.
-
-## The scenario
-
-A university IT helpdesk receives messages such as “I cannot connect to Wi-Fi” and “I forgot my password.” The assistant should find the relevant instructions, check whether a service is down, and help prepare a support ticket if the problem remains unresolved. When a user returns, it should remember the conversation and their saved preference for the language of replies.
-
-Build this assistant in stages using **LangGraph**. Start with a small program whose route you can explain. Then add model decisions, tools and memory. A terminal application is enough.
-
-This is a practice version of a real helpdesk workflow. Use the supplied fictional helpdesk information and invented users. It does not connect to the university's systems or submit real tickets.
-
-## Part 1 — Understand how a graph makes a decision
-
-First build a small helpdesk graph **without an LLM**. It handles only Wi-Fi questions and password questions.
-
-Your graph must follow this structure:
-
-```text
-START → read_request → choose the next node
-                         ├─ wifi_help     → END
-                         ├─ password_help → END
-                         └─ other_help    → END
+Windows PowerShell:
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 ```
 
-Use these routing rules:
+macOS / Linux:
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+```
 
-- If the message contains `wifi` or `wi-fi`, send it to `wifi_help`.
-- Otherwise, if it contains `password`, send it to `password_help`.
-- Otherwise, send it to `other_help`, which asks the user whether the problem concerns Wi-Fi or a password.
-- Ignore differences between uppercase and lowercase letters.
+`requirements.txt` pins the exact versions I used: langgraph 1.2.20, langgraph-checkpoint-sqlite 3.1.3, langchain-core 1.7.6, langchain-openai 1.7.4, openai 3.35.1, python-dotenv 1.2.3, pytest 9.1.1.
 
-The two help nodes should return the corresponding instructions from `data/helpdesk.json`. Use separate LangGraph nodes and a conditional edge.
+### Model and API key
 
-### Decide what your state holds
+* Part 1 needs no key.
+* The **real model** needs an OpenAI API key and a model name that supports function tools. Copy `.env.example` to `.env` and fill in:
+  ```
+  OPENAI_API_KEY=your-key
+  MODEL_NAME=gpt-5.6-luna
+  ```
+  I used `gpt-5.6-luna` from OpenAI. `.env` is git-ignored. Never commit keys.
+* The model is called with `reasoning_effort="none"`. With reasoning turned on, the OpenAI chat completions endpoint refuses function tools for this model.
+* If you use another provider, replace the `langchain-openai` adapter in `requirements.txt` and in `helpdesk/agent.py` (function `get_model`).
+* Without a key, `--model auto` (the default) uses a clearly labelled **scripted fake model** (`helpdesk/fake_model.py`). It is not an LLM. The tests use it. Use `--model real` to force the real model.
 
-Use at least these fields:
+## Run
 
-| Field | What it holds |
-| --- | --- |
-| `message` | The user's original message |
-| `category` | The category identified by `read_request` |
-| `reply` | The response produced by a help node |
+Part 1 (no LLM):
+```powershell
+python -m helpdesk.part1 --message "My Wi-Fi password does not work."
+python -m helpdesk.part1 --message "My Wi-Fi password does not work." --variant with_clarification
+```
+The first command runs the original graph. The second runs the changed graph with `clarify_problem`.
 
-Before writing code, draw the graph and answer:
+Parts 2–3 (model + tools + memory). Several `--message` options go to the same conversation:
+```powershell
+python -m helpdesk.cli --user demo-user-a --thread s06 --profile normal --model real --message "Show me the Wi-Fi troubleshooting steps." --message "I enabled Wi-Fi and forgot the saved network, but Campus-Demo still will not connect. Check whether Wi-Fi is down. If it is operating, prepare a ticket about this problem."
+```
+Options: `--user`, `--thread`, `--profile normal|wifi_outage|recovery_outage|status_unavailable`, `--model auto|fake|real`, `--trace-json FILE`, `--max-tool-rounds N`. Without `--message` the program is interactive (an empty line quits).
 
-1. What information does each node need to read? What does it change?
-2. What is the difference between a node returning an update to the state and a conditional edge choosing the next node?
-3. Does the next node receive only the previous node's update, or the current graph state?
-4. What do `START`, `END`, and compiling a graph mean in this program?
+Restart demo (two separate runs = two processes, same storage):
+```powershell
+python -m helpdesk.cli --user demo-user-a --thread restart-a --model real --message "Please remember that I prefer replies in Kazakh. My issue is Wi-Fi. I enabled it and tried reconnecting, but it still fails."
+python -m helpdesk.cli --user demo-user-a --thread restart-a --model real --message "Which problem and steps did we discuss?"
+```
 
-### Predict, run, explain
+### All supplied scenarios (S01–S14)
+```powershell
+python -m helpdesk.runner --all
+python -m helpdesk.runner --scenario S11
+python -m helpdesk.runner --all --model real
+```
+The runner writes one log per scenario to `outputs/S01.json` … `outputs/S14.json`. It deletes the storage before each scenario (`reset_before`), runs each group of messages in its own process, and starts a **new process** at every `restart_process` event. Each log records the commands, process ids, the model used, nodes, tool requests and results, information sources, the final reply, ticket file names and whether the loop limit was reached.
 
-Predict the route for each message before running your code:
+### Saved logs in `outputs/`
 
-- `I cannot connect to Wi-Fi.`
-- `I forgot my PASSWORD.`
-- `My laptop screen is broken.`
-- `My Wi-Fi password does not work.`
+* `S*.json` — logs of the supplied scenarios (Part 1 traces and runner logs). The model used is written inside each log.
+* `real-*.json` — runs with the real model (`gpt-5.6-luna`) for Parts 2 and 3.
+* `tickets/` — local ticket drafts. They contain only invented demo data. Nothing is ever sent.
 
-Then run all four. For each run, save the order of nodes and the state after each node. Compare it with your prediction. Explain what happens when a message mentions both Wi-Fi and a password, and which rule causes that result.
+## Where memory is saved, and how to reset it
 
-Now change the graph: when both topics appear, send the request to a new `clarify_problem` node that asks which problem the user wants to solve first. Show the changed graph and the new execution trace.
+* Default folder: `local-storage/` (change it with the environment variable `HELPDESK_STORAGE_DIR`). It is git-ignored.
+  * `checkpoints.sqlite` — conversation memory (LangGraph checkpointer, one conversation per `thread_id`).
+  * `user_memory.sqlite` — user memory (reply-language preference, one row per `user_id`).
+* Reset everything:
+  * Windows PowerShell: `Remove-Item -Recurse -Force local-storage`
+  * macOS / Linux: `rm -rf local-storage`
+* Ticket drafts go to `outputs/tickets/` (change with `HELPDESK_TICKET_DIR`).
 
-Finish by explaining **what LangGraph controls here** and **what your own Python functions decide**. There is no model making decisions in this part.
+## Tests and CI
 
-## Part 2 — Let a model choose tools
+```powershell
+python -m pytest -q
+```
+The tests use temporary folders and the scripted fake model, so they need **no API key**. They cover routing, the three tools, ticket rules, the loop limit, memory after a restart (including a real two-process test), and separation between users and between threads. The docstring of each test says what bug it would catch. GitHub Actions (`.github/workflows/tests.yml`) runs the tests on every push. The real-model demonstration is separate and is not part of CI.
 
-Extend the same helpdesk with a model that can use three reusable tools:
+## Layout
 
-| Tool | What it does |
-| --- | --- |
-| `find_instructions` | Looks up Wi-Fi or password instructions in the local helpdesk data |
-| `check_service_status` | Looks up whether the requested service is operating or has a known outage |
-| `prepare_ticket` | Produces a local ticket draft from the problem description and steps already tried |
-
-Each tool must work when called directly, without the agent. Then connect the tools to the model through your graph. A ticket is a draft saved locally; no message is sent to a real helpdesk.
-
-Show one request that needs more than one tool. For example: “Wi-Fi still does not work after I followed the instructions. Is it down? If it is working, help me prepare a ticket.” The assistant's choice should depend on the tool results.
-
-Draw the execution loop: the model requests a tool, your program runs it, its result returns to the model, and the model either continues or answers. Include a limit so the loop cannot run forever, and explain where you enforce it.
-
-In `SUBMISSION.md`, explain:
-
-1. How does the graph decide between running a tool and ending with an answer?
-2. Which component requests a tool, and which component actually executes it?
-3. What changes in the state after a tool result returns?
-4. What makes this part different from the fixed routing rules in Part 1?
-
-Save an actual run showing the model requests, tool results, and final answer. State which model and provider you used. Use the supplied service-status snapshots to show that the same conditional request leads to different behaviour when Wi-Fi is operating, down, or its status is unknown. See SCENARIOS.md for the interactions.
-
-## Part 3 — Remember the user and the conversation
-
-Add two separate kinds of memory:
-
-- **Conversation memory:** the current problem, previous messages and steps already tried in this conversation.
-- **User memory:** a saved preference, such as “reply in Kazakh,” that is available in a later conversation for the same invented user.
-
-Use a LangGraph checkpointer to save conversation state, and persistent storage for the user preference. Explain what a `thread_id` identifies and how it differs from a user identifier. Memory must survive closing and restarting the program.
-
-Demonstrate these situations:
-
-1. A user reports a Wi-Fi problem, then says “I already tried that.” The assistant uses the earlier messages to understand what “that” means.
-2. Close the program and start it again. Resume the same conversation with its previous state.
-3. Start a new conversation for the same invented user. The saved language preference is available, while the previous conversation is a separate thread.
-4. Start a conversation for a different invented user. The first user's preference must not appear.
-
-For each demonstration, show what was read from conversation memory, user memory, or the helpdesk reference file. Explain why looking up Wi-Fi instructions is retrieval, while recalling the user's chosen language is memory.
-
-## Part 4 — Make it easy for someone else to run your work
-
-This means another person can download your code, follow your instructions, and run the same demonstrations on their computer.
-
-In your repository:
-
-1. Add a `README.md` with the exact steps to install the required packages, configure a model API key, start the program, and run the examples. State your Python version.
-2. Include a dependency file with the package versions you used. Do not make the reader guess which LangGraph version works with your code.
-3. Explain where memory files are saved and how to clear them to start again.
-4. Add tests that check routing, the three tools, saved memory after a restart, and separation between users and conversations. Explain what each test would catch if the code broke.
-5. Set up GitHub Actions to run these tests automatically whenever you push changes. This is continuous integration, or CI. The tests must work without a private model API key; you may substitute a clearly labelled fake model in tests. Keep the real model demonstration from Part 2 separate.
-6. Commit as you complete each stage, with messages explaining what changed.
-
-Keep API keys in environment variables or an ignored `.env` file. Do not commit keys, live memory databases, or personal information. Use invented identifiers such as `demo-user-a` and `demo-user-b` in your saved examples.
-
-## Demonstrate the finished application
-
-Run S01–S14 from data/scenarios.json. Follow reset and restart events as explained in data/README.md. Fill in the scenario table in SUBMISSION.md and save your own logs. SCENARIOS.md shows the expected user experience; it is not a set of measured results.
-
-## What to hand in
-
-Submit your repository link. It should contain:
-
-- Your LangGraph code for all four parts.
-- `SUBMISSION.md` with your drawings, explanations and predictions compared with actual runs.
-- Small execution logs in `outputs/` showing which nodes and tools ran and what changed in the state.
-- Setup instructions, a dependency file, tests and the GitHub Actions workflow.
-
-Push your finished work to your public fork and submit its link on the LMS. The exact HW5 LMS submission destination is still to be provided by the professor.
-
-## References
-
-- [LangGraph Graph API](https://docs.langchain.com/oss/python/langgraph/graph-api)
-- [LangGraph persistence](https://docs.langchain.com/oss/python/langgraph/persistence)
-- [LangGraph memory](https://docs.langchain.com/oss/python/langgraph/add-memory)
-
-
+```
+helpdesk/part1.py       Part 1 graph (no LLM) and trace
+helpdesk/tools.py       the tools as plain functions
+helpdesk/agent.py       model/tools graph, loop limit, storage setup
+helpdesk/memory.py      user memory (SQLite)
+helpdesk/fake_model.py  scripted fake model for tests and offline runs
+helpdesk/cli.py         terminal application
+helpdesk/runner.py      scenario runner (S01-S14)
+data/                   supplied fixtures
+outputs/                saved logs and demo tickets
+tests/                  pytest tests
+```
