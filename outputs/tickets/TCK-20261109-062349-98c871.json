@@ -1,0 +1,15 @@
+{
+  "ticket_id": "TCK-20261109-062349-98c871",
+  "status": "draft",
+  "user_id": "demo-user-a",
+  "thread_id": "real-s06",
+  "category": "wifi",
+  "summary": "Campus-Demo will not connect after Wi-Fi was enabled and the saved network was forgotten.",
+  "steps_tried": [
+    "Enabled Wi-Fi.",
+    "Forgot the saved Campus-Demo network."
+  ],
+  "service_status": "operational",
+  "status_profile": "normal",
+  "reference_ids": []
+}

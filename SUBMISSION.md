@@ -4,24 +4,149 @@
 
 ### My graph and state
 
-TODO: draw the first graph and explain what each node reads and changes. Answer the four state and routing questions in the brief.
+```
+START -> read_request -> choose_next (conditional edge)
+                           |-- wifi_help     -> END
+                           |-- password_help -> END
+                           '-- other_help    -> END
+```
+
+The state has three fields:
+
+| Field | What it holds |
+| --- | --- |
+| `message` | The user's original message. It is never changed. |
+| `category` | The category found by `read_request` (`wifi`, `password` or `other`). |
+| `reply` | The answer written by a help node. |
+
+What each part reads and changes:
+
+| Part | Reads | Changes |
+| --- | --- | --- |
+| `read_request` | `message` | `category` |
+| `wifi_help` | nothing from the state (it reads `data/helpdesk.json`) | `reply` |
+| `password_help` | nothing from the state (it reads `data/helpdesk.json`) | `reply` |
+| `other_help` | nothing | `reply` |
+| `choose_next` (conditional edge) | `category` | nothing |
+
+**1. What information does each node need to read? What does it change?**
+`read_request` reads `message` and changes `category`. The help nodes do not need to read the state. `wifi_help` and `password_help` read the instructions from `data/helpdesk.json`. Every help node changes `reply`. The conditional edge `choose_next` reads `category` and changes nothing.
+
+**2. What is the difference between a node returning an update and a conditional edge choosing the next node?**
+A node returns an update. This is a dictionary with the state keys it wants to change, and LangGraph merges it into the state. A conditional edge returns only the name of the next node. It does not change the state.
+
+**3. Does the next node receive only the previous node's update, or the current graph state?**
+It receives the current graph state. After `read_request`, the state is `{message, category}`. The next node sees both fields, not only `category`.
+
+**4. What do `START`, `END`, and compiling a graph mean in this program?**
+`START` is the entry point. The first edge leaves from it. `END` means the run is finished. `compile()` checks that the graph is valid (the nodes and edges exist) and turns it into an object that I can run.
 
 ### Predictions before running
 
+I wrote each prediction from the three routing rules before I ran the code. Then I ran `python -m helpdesk.part1 --message "..."` for each message.
+
 | Message | Predicted route | Actual route | What I learned |
 | --- | --- | --- | --- |
-| I cannot connect to Wi-Fi. | | | |
-| I forgot my PASSWORD. | | | |
-| My laptop screen is broken. | | | |
-| My Wi-Fi password does not work. | | | |
+| I cannot connect to Wi-Fi. | read_request → wifi_help | START → read_request → wifi_help → END | "Wi-Fi" with a hyphen is found. |
+| I forgot my PASSWORD. | read_request → password_help | START → read_request → password_help → END | Upper and lower case do not matter. |
+| My laptop screen is broken. | read_request → other_help | START → read_request → other_help → END | Unknown topics go to the node that asks a question. |
+| My Wi-Fi password does not work. | read_request → wifi_help | START → read_request → wifi_help → END | The order of the rules decides the route. Wi-Fi is checked first. |
+
+**Both topics.** When a message mentions both Wi-Fi and a password, the graph sends it to `wifi_help`. The reason is rule 1: `read_request` checks Wi-Fi first and sets `category = "wifi"`. The password rule is never checked. So the user may get Wi-Fi instructions for a password problem.
 
 ### My change to the graph
 
-TODO: draw the graph with clarify_problem, show the new trace, and explain the difference. What does LangGraph control, and what do my functions decide?
+I added a new node `clarify_problem`. When both topics appear, the request goes there. It asks which problem the user wants to solve first.
+
+```
+START -> read_request -> choose_next (conditional edge)
+                           |-- wifi_help        -> END
+                           |-- password_help    -> END
+                           |-- clarify_problem  -> END   (new: both topics)
+                           '-- other_help       -> END
+```
+
+What I changed in the code:
+1. `read_request` sets `category = "both"` when the message contains both Wi-Fi and password. This check comes before the Wi-Fi rule.
+2. `choose_next` sends `both` to `clarify_problem`.
+3. The new node `clarify_problem` writes a question into `reply`.
+
+New execution trace for "My Wi-Fi password does not work.":
+
+```
+Route: START -> read_request -> clarify_problem -> END
+after read_request:    {"message": "My Wi-Fi password does not work.", "category": "both"}
+after clarify_problem: {"message": "My Wi-Fi password does not work.", "category": "both",
+                        "reply": "Is the problem connecting to Wi-Fi, or recovering your account password?"}
+```
+
+**The difference.** Before the change, this message went to `wifi_help` and the user got Wi-Fi instructions. After the change, it goes to `clarify_problem` and the user gets a question. The route in the graph is different. It is not only a different final sentence.
+
+**What LangGraph controls, and what my functions decide.**
+LangGraph controls how the program runs. It starts at `START`, runs one node at a time, merges each update into the state, follows the edge that the conditional function returns, and stops at `END`. My own Python functions decide what things mean. They find the topic in the message, decide which rule has priority, set the category, return the name of the next node and write the replies. There is no model in this part, so all decisions are made by my code.
 
 ## Part 2 — Model and tools
 
-TODO: draw the model/tool loop. Answer the four questions in the brief. Record the model and provider, direct calls to each tool, and one actual run that uses multiple tools. Explain the loop limit.
+### The loop
+
+```
+START -> load_user_memory -> agent --(no tool request)--------------------> END
+                               |  ^
+        (tool request, < 4)    |  |  the tool result goes back to the model
+                               v  |
+                             tools
+agent --(tool request, 4 rounds used)--> limit_reached -> END
+```
+
+1. The model requests a tool. This is a message with a tool name and arguments.
+2. My `tools` node runs the tool function.
+3. The result is added to the messages as a tool message.
+4. The `agent` node calls the model again. It either requests another tool or answers.
+
+**Loop limit.** The limit is 4 tool rounds per user message (`MAX_TOOL_ROUNDS` in `helpdesk/agent.py`). It is enforced in the conditional edge `route_after_agent`. If the model asks for a tool and 4 rounds are already used, the graph goes to `limit_reached` and stops. A test with a model that always asks for a tool (`test_loop_limit_stops_a_runaway_model`) checks this.
+
+### The tools
+
+`find_instructions`, `check_service_status` and `prepare_ticket` are normal Python functions in `helpdesk/tools.py`. Each works without the agent. I called them directly:
+
+```
+find_instructions('Wi-Fi')['instruction_id']      -> GUIDE-WIFI
+check_service_status('wifi', 'wifi_outage')['status'] -> outage
+prepare_ticket('', [])  -> {'created': False, 'error': 'missing_information',
+                            'missing': ['problem description', 'steps already tried']}
+```
+
+The model only chooses the tool and its arguments. My program supplies the user id, the thread id and the status snapshot, so the model cannot choose them.
+
+### Questions
+
+**1. How does the graph decide between running a tool and ending with an answer?**
+The conditional edge `route_after_agent` looks at the last message from the model. If it has no tool request, the run ends. If it has a tool request and fewer than 4 rounds were used, the graph goes to `tools`. If 4 rounds were used, it goes to `limit_reached`.
+
+**2. Which component requests a tool, and which component actually executes it?**
+The model requests it. It only returns the tool name and the arguments. My `tools` node executes the function.
+
+**3. What changes in the state after a tool result returns?**
+A tool message with the result is added to `messages`, and `tool_rounds` increases by 1. The next model call sees this result.
+
+**4. What makes this part different from the fixed routing rules in Part 1?**
+In Part 1, my keyword rules chose the route. Here the model chooses which tool to call and when to stop, and its choice depends on the tool results. For example, the status check decides whether a ticket is made.
+
+### Real run
+
+- **Provider and model:** OpenAI, `gpt-5.6-luna`, with `reasoning_effort="none"`. With reasoning on, the API refused function tools on the chat completions endpoint, so I turned reasoning off.
+- **Logs:** `outputs/real-S06.json`, `outputs/real-S07.json`, `outputs/real-S08.json`.
+- The scripted fake model was used only for tests and for the first logs. It is not an LLM.
+
+The same conditional request with three status snapshots:
+
+| Snapshot | Tools called by the model | Result |
+| --- | --- | --- |
+| normal (S06) | `check_service_status` → `prepare_ticket` | Status `operational`. Local draft `TCK-20261109-062349-98c871.json`. `steps_tried`: "Enabled Wi-Fi.", "Forgot the saved Campus-Demo network." |
+| wifi_outage (S07) | `check_service_status`, `find_instructions` | Status `outage`. No ticket. No repair time, because the data has none. |
+| status_unavailable (S08) | `check_service_status` | Status `unknown`. No ticket. The model did not say Wi-Fi is operating. It asked if I want a draft. |
+
+Differences from the fake model: in S07 the real model also called `find_instructions` in the same step, which was not needed. In S06 it did not put `GUIDE-WIFI` into `reference_ids`. A real model can behave a little differently each time, so my saved logs are the evidence for what happened.
 
 ## Part 3 — Memory
 
