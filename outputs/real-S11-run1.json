@@ -1,0 +1,109 @@
+[
+  {
+    "user_id": "demo-user-a",
+    "thread_id": "restart-a",
+    "status_profile": "normal",
+    "model": "openai:gpt-5.6-luna",
+    "user_message": "Please remember that I prefer replies in Kazakh. My issue is Wi-Fi. I enabled it and tried reconnecting, but it still fails.",
+    "events": [
+      {
+        "node": "load_user_memory",
+        "user_memory_loaded": {}
+      },
+      {
+        "node": "agent",
+        "model_tool_requests": [
+          {
+            "tool": "save_user_preference",
+            "args": {
+              "key": "reply_language",
+              "value": "Kazakh"
+            }
+          }
+        ]
+      },
+      {
+        "node": "tools",
+        "tool_results": [
+          {
+            "tool": "save_user_preference",
+            "result": {
+              "saved": true,
+              "key": "reply_language",
+              "value": "Kazakh"
+            }
+          }
+        ]
+      },
+      {
+        "node": "agent",
+        "model_tool_requests": [
+          {
+            "tool": "find_instructions",
+            "args": {
+              "topic": "wifi"
+            }
+          },
+          {
+            "tool": "check_service_status",
+            "args": {
+              "service": "wifi"
+            }
+          }
+        ]
+      },
+      {
+        "node": "tools",
+        "tool_results": [
+          {
+            "tool": "find_instructions",
+            "result": {
+              "found": true,
+              "topic": "wifi",
+              "instruction_id": "GUIDE-WIFI",
+              "title": "Connect to the practice campus network",
+              "steps": [
+                "Check that Wi-Fi is enabled and airplane mode is off.",
+                "Select the fictional Campus-Demo network.",
+                "If connection fails, forget the saved network and try connecting again.",
+                "If the problem remains, check the service status before preparing a ticket."
+              ],
+              "source": "data/helpdesk.json"
+            }
+          },
+          {
+            "tool": "check_service_status",
+            "result": {
+              "service": "wifi",
+              "status": "operational",
+              "message": "The demo Wi-Fi service has no reported outage.",
+              "status_profile": "normal",
+              "source": "data/service_status.json"
+            }
+          }
+        ]
+      },
+      {
+        "node": "agent",
+        "model_answer": "Жауаптарды қазақ тілінде беруді есте сақтадым.\n\nWi‑Fi қызметі қазір жұмыс істеп тұр, яғни белгілі ақау тіркелмеген. Келесі қадамдарды орындап көріңіз:\n\n1. Ұшақ режимі өшірулі екенін тексеріңіз.\n2. **Campus-Demo** желісін таңдаңыз.\n3. Сақталған **Campus-Demo** желісін ұмытып, қайта қосылыңыз.\n\nМәселе шешілмесе, орындалған қосымша қадамдарды және нақты қате хабарламасын жазыңыз — жергілікті билет жобасын дайындауға көмектесемін."
+      }
+    ],
+    "information_sources": {
+      "conversation_state": {
+        "restored_messages_from_checkpoint": 0
+      },
+      "user_memory": {},
+      "user_memory_written": {
+        "reply_language": "Kazakh"
+      },
+      "reference_file": [
+        "data/helpdesk.json",
+        "data/service_status.json"
+      ]
+    },
+    "final_reply": "Жауаптарды қазақ тілінде беруді есте сақтадым.\n\nWi‑Fi қызметі қазір жұмыс істеп тұр, яғни белгілі ақау тіркелмеген. Келесі қадамдарды орындап көріңіз:\n\n1. Ұшақ режимі өшірулі екенін тексеріңіз.\n2. **Campus-Demo** желісін таңдаңыз.\n3. Сақталған **Campus-Demo** желісін ұмытып, қайта қосылыңыз.\n\nМәселе шешілмесе, орындалған қосымша қадамдарды және нақты қате хабарламасын жазыңыз — жергілікті билет жобасын дайындауға көмектесемін.",
+    "ticket_files": [],
+    "loop_limit_reached": false,
+    "pid": 16440
+  }
+]

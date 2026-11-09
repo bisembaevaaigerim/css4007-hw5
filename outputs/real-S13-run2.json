@@ -1,0 +1,29 @@
+[
+  {
+    "user_id": "demo-user-b",
+    "thread_id": "isolation-b",
+    "status_profile": "normal",
+    "model": "openai:gpt-5.6-luna",
+    "user_message": "Have I told you a preferred language or a previous problem?",
+    "events": [
+      {
+        "node": "load_user_memory",
+        "user_memory_loaded": {}
+      },
+      {
+        "node": "agent",
+        "model_answer": "No. I don’t have a saved preferred language or any record of a previous problem."
+      }
+    ],
+    "information_sources": {
+      "conversation_state": {
+        "restored_messages_from_checkpoint": 0
+      },
+      "user_memory": {}
+    },
+    "final_reply": "No. I don’t have a saved preferred language or any record of a previous problem.",
+    "ticket_files": [],
+    "loop_limit_reached": false,
+    "pid": 10828
+  }
+]

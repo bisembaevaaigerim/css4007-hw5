@@ -1,0 +1,33 @@
+[
+  {
+    "user_id": "demo-user-a",
+    "thread_id": "preference-a2",
+    "status_profile": "normal",
+    "model": "openai:gpt-5.6-luna",
+    "user_message": "Which language did I ask you to use? What can you help with?",
+    "events": [
+      {
+        "node": "load_user_memory",
+        "user_memory_loaded": {
+          "reply_language": "Kazakh"
+        }
+      },
+      {
+        "node": "agent",
+        "model_answer": "Сіз қазақ тілін қолдануды сұрадыңыз.\n\nМен мына мәселелер бойынша көмектесе аламын:\n- Wi‑Fi ақауларын жою;\n- Құпиясөзді қалпына келтіру бойынша нұсқаулық беру;\n- Қызметтің жұмыс күйін тексеру;\n- Сіз берген мәселе мен жасалған қадамдар негізінде жергілікті IT-қолдау өтінімінің жобасын дайындау."
+      }
+    ],
+    "information_sources": {
+      "conversation_state": {
+        "restored_messages_from_checkpoint": 0
+      },
+      "user_memory": {
+        "reply_language": "Kazakh"
+      }
+    },
+    "final_reply": "Сіз қазақ тілін қолдануды сұрадыңыз.\n\nМен мына мәселелер бойынша көмектесе аламын:\n- Wi‑Fi ақауларын жою;\n- Құпиясөзді қалпына келтіру бойынша нұсқаулық беру;\n- Қызметтің жұмыс күйін тексеру;\n- Сіз берген мәселе мен жасалған қадамдар негізінде жергілікті IT-қолдау өтінімінің жобасын дайындау.",
+    "ticket_files": [],
+    "loop_limit_reached": false,
+    "pid": 12396
+  }
+]

@@ -1,0 +1,33 @@
+[
+  {
+    "user_id": "demo-user-a",
+    "thread_id": "restart-a",
+    "status_profile": "normal",
+    "model": "openai:gpt-5.6-luna",
+    "user_message": "Which problem and steps did we discuss?",
+    "events": [
+      {
+        "node": "load_user_memory",
+        "user_memory_loaded": {
+          "reply_language": "Kazakh"
+        }
+      },
+      {
+        "node": "agent",
+        "model_answer": "Біз талқылаған мәселе:\n\n- **Мәселе:** Wi‑Fi қосулы, бірақ қайта қосылуға тырысқанда қосылым сәтсіз болады.\n- **Орындалған қадам:** Wi‑Fi қосылды және қайта қосылу әрекеті жасалды.\n- **Ұсынылған, бірақ орындалғаны расталмаған қадамдар:** ұшақ режимін тексеру, **Campus-Demo** желісін таңдау және сақталған желіні ұмытып, қайта қосылу.\n- **Қызмет күйі:** демо Wi‑Fi қызметі жұмыс істеп тұр; белгілі үзіліс жоқ."
+      }
+    ],
+    "information_sources": {
+      "conversation_state": {
+        "restored_messages_from_checkpoint": 7
+      },
+      "user_memory": {
+        "reply_language": "Kazakh"
+      }
+    },
+    "final_reply": "Біз талқылаған мәселе:\n\n- **Мәселе:** Wi‑Fi қосулы, бірақ қайта қосылуға тырысқанда қосылым сәтсіз болады.\n- **Орындалған қадам:** Wi‑Fi қосылды және қайта қосылу әрекеті жасалды.\n- **Ұсынылған, бірақ орындалғаны расталмаған қадамдар:** ұшақ режимін тексеру, **Campus-Demo** желісін таңдау және сақталған желіні ұмытып, қайта қосылу.\n- **Қызмет күйі:** демо Wi‑Fi қызметі жұмыс істеп тұр; белгілі үзіліс жоқ.",
+    "ticket_files": [],
+    "loop_limit_reached": false,
+    "pid": 15780
+  }
+]

@@ -150,14 +150,35 @@ Differences from the fake model: in S07 the real model also called `find_instruc
 
 ## Part 3 — Memory
 
-TODO: explain conversation state, thread_id, user identifier, user preference storage, and retrieval from helpdesk.json.
+I use two separate kinds of memory.
+
+| | Conversation memory | User memory |
+| --- | --- | --- |
+| What it holds | messages, current problem, steps already tried | the preference for the reply language |
+| Key | `thread_id` | `user_id` |
+| How it is saved | LangGraph checkpointer (`SqliteSaver`) | my own SQLite table in `helpdesk/memory.py` |
+| File | `local-storage/checkpoints.sqlite` | `local-storage/user_memory.sqlite` |
+| Lives | in one conversation | in all conversations of this user |
+
+**How it works.** The checkpointer saves the graph state after each step. When a new message arrives with the same `thread_id`, the graph loads the saved messages and adds the new one. User memory is read by the node `load_user_memory` at the start of every message, and it is put into the system prompt. It is written by the tool `save_user_preference`, which the model calls when the user asks to remember something. Only the key `reply_language` is allowed.
+
+**`thread_id` and user identifier.** A `thread_id` identifies one conversation. One user can have many conversations, and each has its own history. A `user_id` identifies the person and selects the user memory, which is shared by all of that person's conversations. My program sets both values (`--user`, `--thread`). The model cannot choose them. In `save_user_preference` the user id comes from the program's config, not from the model's arguments, so the model cannot write to or read another user's memory.
+
+**Retrieval and memory.** Looking up Wi-Fi instructions is retrieval. The same reference file, `data/helpdesk.json`, is read for everyone. Recalling the language is memory. The user told me this earlier, it is stored per user, and it exists nowhere else.
+
+All runs below used the real model `gpt-5.6-luna` (OpenAI). Storage was deleted before each scenario.
 
 | Situation | Command used | Log file | What happened |
 | --- | --- | --- | --- |
-| Refer to an earlier message | | | |
-| Close, restart and resume | | | |
-| Same user, new conversation | | | |
-| Different user | | | |
+| Refer to an earlier message | `python -m helpdesk.cli --user demo-user-a --thread s10 --model real --message "I cannot connect to Wi-Fi. I enabled it and forgot the saved network, but reconnecting failed." --message "Which steps did I already try?"` | `outputs/real-S10.json` | In the second message the checkpoint gave back 5 messages. The assistant listed: enabled Wi-Fi, forgot the saved network, tried reconnecting. Source: conversation memory. |
+| Close, restart and resume | Two separate runs with `--thread restart-a` (first: "Please remember that I prefer replies in Kazakh. My issue is Wi-Fi..."; second: "Which problem and steps did we discuss?") | `outputs/real-S11-run1.json`, `outputs/real-S11-run2.json` | The process ids were different (16440 and 15780). The second run restored 7 messages from the checkpoint and loaded `reply_language: Kazakh` from user memory. It answered in Kazakh about the Wi-Fi problem and the steps. |
+| Same user, new conversation | Thread `preference-a1` (save the preference), then thread `preference-a2` ("Which language did I ask you to use? What can you help with?") | `outputs/real-S12-run1.json`, `outputs/real-S12-run2.json` | The new thread restored 0 messages (a separate conversation), but user memory had `Kazakh`. The answer named the language and what the helpdesk can do, in Kazakh. Source: user memory. |
+| Different user | `demo-user-a` saves the preference in `isolation-a`; then `demo-user-b` in `isolation-b` asks "Have I told you a preferred language or a previous problem?" | `outputs/real-S13-run1.json`, `outputs/real-S13-run2.json` | `demo-user-b` had empty user memory and 0 restored messages. The assistant said it has no saved language or previous problem. Nothing from `demo-user-a` appeared. |
+
+**What was read from where.**
+- Conversation memory: S10 (second message) and S11 (second run).
+- User memory: S11 (second run) and S12 (second run). The log shows `user memory: {"reply_language": "Kazakh"}` in `load_user_memory`.
+- Reference file `data/helpdesk.json`: the `find_instructions` results, in the first-turn runs.
 
 ## Part 4 — Running and checking my work
 

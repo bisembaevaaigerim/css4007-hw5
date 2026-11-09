@@ -1,0 +1,57 @@
+[
+  {
+    "user_id": "demo-user-a",
+    "thread_id": "preference-a1",
+    "status_profile": "normal",
+    "model": "openai:gpt-5.6-luna",
+    "user_message": "Please remember that I prefer replies in Kazakh. I have a Wi-Fi problem.",
+    "events": [
+      {
+        "node": "load_user_memory",
+        "user_memory_loaded": {}
+      },
+      {
+        "node": "agent",
+        "model_tool_requests": [
+          {
+            "tool": "save_user_preference",
+            "args": {
+              "key": "reply_language",
+              "value": "Kazakh"
+            }
+          }
+        ]
+      },
+      {
+        "node": "tools",
+        "tool_results": [
+          {
+            "tool": "save_user_preference",
+            "result": {
+              "saved": true,
+              "key": "reply_language",
+              "value": "Kazakh"
+            }
+          }
+        ]
+      },
+      {
+        "node": "agent",
+        "model_answer": "Жауаптарды қазақ тілінде беремін.\n\nWi‑Fi мәселесін нақтылау үшін мынаны жазыңыз:\n- Қандай проблема болып тұр? (желі көрінбейді, қосылмайды, интернет жоқ, жылдамдық төмен және т.б.)\n- Осы уақытқа дейін қандай қадамдар жасап көрдіңіз?"
+      }
+    ],
+    "information_sources": {
+      "conversation_state": {
+        "restored_messages_from_checkpoint": 0
+      },
+      "user_memory": {},
+      "user_memory_written": {
+        "reply_language": "Kazakh"
+      }
+    },
+    "final_reply": "Жауаптарды қазақ тілінде беремін.\n\nWi‑Fi мәселесін нақтылау үшін мынаны жазыңыз:\n- Қандай проблема болып тұр? (желі көрінбейді, қосылмайды, интернет жоқ, жылдамдық төмен және т.б.)\n- Осы уақытқа дейін қандай қадамдар жасап көрдіңіз?",
+    "ticket_files": [],
+    "loop_limit_reached": false,
+    "pid": 20876
+  }
+]
