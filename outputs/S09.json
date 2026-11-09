@@ -1,0 +1,180 @@
+{
+  "scenario": "S09",
+  "title": "Missing ticket details",
+  "part": 2,
+  "status_profile": "normal",
+  "reset_before": true,
+  "commands": [
+    "python -m helpdesk.cli --user demo-user-a --thread s09 --profile normal --message \"Prepare a support ticket.\" --message \"The issue is Wi-Fi. I enabled it and tried reconnecting, but it still fails.\""
+  ],
+  "segments": [
+    {
+      "user_id": "demo-user-a",
+      "thread_id": "s09",
+      "process_id": 20008,
+      "model": "openai:gpt-5.6-luna",
+      "turns": [
+        {
+          "user_id": "demo-user-a",
+          "thread_id": "s09",
+          "status_profile": "normal",
+          "model": "openai:gpt-5.6-luna",
+          "user_message": "Prepare a support ticket.",
+          "events": [
+            {
+              "node": "load_user_memory",
+              "user_memory_loaded": {}
+            },
+            {
+              "node": "agent",
+              "model_answer": "Please provide:\n\n- **Problem description:** What issue are you experiencing?\n- **Steps tried:** What have you already attempted?\n- **Service/category:** Wi‑Fi or account/password recovery, if applicable\n- **Any reference IDs:** Optional—do not include passwords, API keys, or recovery codes."
+            }
+          ],
+          "information_sources": {
+            "conversation_state": {
+              "restored_messages_from_checkpoint": 0
+            },
+            "user_memory": {}
+          },
+          "final_reply": "Please provide:\n\n- **Problem description:** What issue are you experiencing?\n- **Steps tried:** What have you already attempted?\n- **Service/category:** Wi‑Fi or account/password recovery, if applicable\n- **Any reference IDs:** Optional—do not include passwords, API keys, or recovery codes.",
+          "ticket_files": [],
+          "loop_limit_reached": false,
+          "pid": 20008
+        },
+        {
+          "user_id": "demo-user-a",
+          "thread_id": "s09",
+          "status_profile": "normal",
+          "model": "openai:gpt-5.6-luna",
+          "user_message": "The issue is Wi-Fi. I enabled it and tried reconnecting, but it still fails.",
+          "events": [
+            {
+              "node": "load_user_memory",
+              "user_memory_loaded": {}
+            },
+            {
+              "node": "agent",
+              "model_tool_requests": [
+                {
+                  "tool": "check_service_status",
+                  "args": {
+                    "service": "wifi"
+                  }
+                },
+                {
+                  "tool": "find_instructions",
+                  "args": {
+                    "topic": "wifi"
+                  }
+                }
+              ]
+            },
+            {
+              "node": "tools",
+              "tool_results": [
+                {
+                  "tool": "check_service_status",
+                  "result": {
+                    "service": "wifi",
+                    "status": "operational",
+                    "message": "The demo Wi-Fi service has no reported outage.",
+                    "status_profile": "normal",
+                    "source": "data/service_status.json"
+                  }
+                },
+                {
+                  "tool": "find_instructions",
+                  "result": {
+                    "found": true,
+                    "topic": "wifi",
+                    "instruction_id": "GUIDE-WIFI",
+                    "title": "Connect to the practice campus network",
+                    "steps": [
+                      "Check that Wi-Fi is enabled and airplane mode is off.",
+                      "Select the fictional Campus-Demo network.",
+                      "If connection fails, forget the saved network and try connecting again.",
+                      "If the problem remains, check the service status before preparing a ticket."
+                    ],
+                    "source": "data/helpdesk.json"
+                  }
+                }
+              ]
+            },
+            {
+              "node": "agent",
+              "model_tool_requests": [
+                {
+                  "tool": "prepare_ticket",
+                  "args": {
+                    "problem": "Unable to connect to Wi-Fi after enabling it and trying to reconnect.",
+                    "steps_tried": [
+                      "Enabled Wi-Fi.",
+                      "Tried reconnecting."
+                    ],
+                    "category": "Wi-Fi",
+                    "service_status": "operational"
+                  }
+                }
+              ]
+            },
+            {
+              "node": "tools",
+              "tool_results": [
+                {
+                  "tool": "prepare_ticket",
+                  "result": {
+                    "created": true,
+                    "ticket_id": "TCK-20261109-065121-6d1c35",
+                    "filename": "TCK-20261109-065121-6d1c35.json",
+                    "path": "outputs\\tickets\\TCK-20261109-065121-6d1c35.json",
+                    "sent": false,
+                    "ticket": {
+                      "ticket_id": "TCK-20261109-065121-6d1c35",
+                      "status": "draft",
+                      "user_id": "demo-user-a",
+                      "thread_id": "s09",
+                      "category": "Wi-Fi",
+                      "summary": "Unable to connect to Wi-Fi after enabling it and trying to reconnect.",
+                      "steps_tried": [
+                        "Enabled Wi-Fi.",
+                        "Tried reconnecting."
+                      ],
+                      "service_status": "operational",
+                      "status_profile": "normal",
+                      "reference_ids": []
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "node": "agent",
+              "model_answer": "Support ticket draft prepared successfully.\n\n- **Ticket ID:** TCK-20261109-065121-6d1c35\n- **Category:** Wi‑Fi\n- **Status:** Draft—not sent\n- **Service status:** Operational\n- **Issue:** Unable to connect after enabling Wi‑Fi and trying to reconnect."
+            }
+          ],
+          "information_sources": {
+            "conversation_state": {
+              "restored_messages_from_checkpoint": 2
+            },
+            "user_memory": {},
+            "reference_file": [
+              "data/service_status.json",
+              "data/helpdesk.json"
+            ]
+          },
+          "final_reply": "Support ticket draft prepared successfully.\n\n- **Ticket ID:** TCK-20261109-065121-6d1c35\n- **Category:** Wi‑Fi\n- **Status:** Draft—not sent\n- **Service status:** Operational\n- **Issue:** Unable to connect after enabling Wi‑Fi and trying to reconnect.",
+          "ticket_files": [
+            "TCK-20261109-065121-6d1c35.json"
+          ],
+          "loop_limit_reached": false,
+          "pid": 20008
+        }
+      ]
+    }
+  ],
+  "final_reply": "Support ticket draft prepared successfully.\n\n- **Ticket ID:** TCK-20261109-065121-6d1c35\n- **Category:** Wi‑Fi\n- **Status:** Draft—not sent\n- **Service status:** Operational\n- **Issue:** Unable to connect after enabling Wi‑Fi and trying to reconnect.",
+  "ticket_files": [
+    "TCK-20261109-065121-6d1c35.json"
+  ],
+  "loop_limit_reached": false
+}

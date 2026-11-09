@@ -1,0 +1,79 @@
+{
+  "scenario": "S14",
+  "title": "Password recovery outage",
+  "part": 2,
+  "status_profile": "recovery_outage",
+  "reset_before": true,
+  "commands": [
+    "python -m helpdesk.cli --user demo-user-a --thread s14 --profile recovery_outage --message \"My password recovery page is unavailable. Check the service status. Is there a known problem?\""
+  ],
+  "segments": [
+    {
+      "user_id": "demo-user-a",
+      "thread_id": "s14",
+      "process_id": 27896,
+      "model": "openai:gpt-5.6-luna",
+      "turns": [
+        {
+          "user_id": "demo-user-a",
+          "thread_id": "s14",
+          "status_profile": "recovery_outage",
+          "model": "openai:gpt-5.6-luna",
+          "user_message": "My password recovery page is unavailable. Check the service status. Is there a known problem?",
+          "events": [
+            {
+              "node": "load_user_memory",
+              "user_memory_loaded": {}
+            },
+            {
+              "node": "agent",
+              "model_tool_requests": [
+                {
+                  "tool": "check_service_status",
+                  "args": {
+                    "service": "account_recovery"
+                  }
+                }
+              ]
+            },
+            {
+              "node": "tools",
+              "tool_results": [
+                {
+                  "tool": "check_service_status",
+                  "result": {
+                    "service": "account_recovery",
+                    "status": "outage",
+                    "message": "The demo account-recovery service is unavailable. The fixture gives no repair time.",
+                    "status_profile": "recovery_outage",
+                    "source": "data/service_status.json"
+                  }
+                }
+              ]
+            },
+            {
+              "node": "agent",
+              "model_answer": "The account-recovery service is currently experiencing a known outage. No repair time is available."
+            }
+          ],
+          "information_sources": {
+            "conversation_state": {
+              "restored_messages_from_checkpoint": 0
+            },
+            "user_memory": {},
+            "reference_file": [
+              "data/service_status.json"
+            ]
+          },
+          "final_reply": "The account-recovery service is currently experiencing a known outage. No repair time is available.",
+          "ticket_files": [],
+          "loop_limit_reached": false,
+          "pid": 27896
+        }
+      ]
+    }
+  ],
+  "final_reply": "The account-recovery service is currently experiencing a known outage. No repair time is available.",
+  "ticket_files": [],
+  "loop_limit_reached": false
+}

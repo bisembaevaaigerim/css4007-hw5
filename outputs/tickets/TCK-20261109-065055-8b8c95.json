@@ -1,0 +1,15 @@
+{
+  "ticket_id": "TCK-20261109-065055-8b8c95",
+  "status": "draft",
+  "user_id": "demo-user-a",
+  "thread_id": "s06",
+  "category": "wifi",
+  "summary": "Campus-Demo will not connect.",
+  "steps_tried": [
+    "Enabled Wi-Fi.",
+    "Forgot the saved network."
+  ],
+  "service_status": "operational",
+  "status_profile": "normal",
+  "reference_ids": []
+}

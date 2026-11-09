@@ -1,0 +1,173 @@
+{
+  "scenario": "S11",
+  "title": "Persist and recall after restart",
+  "part": 3,
+  "status_profile": "normal",
+  "reset_before": true,
+  "commands": [
+    "python -m helpdesk.cli --user demo-user-a --thread restart-a --profile normal --message \"Please remember that I prefer replies in Kazakh. My issue is Wi-Fi. I enabled it and tried reconnecting, but it still fails.\"",
+    "python -m helpdesk.cli --user demo-user-a --thread restart-a --profile normal --message \"Which problem and steps did we discuss?\""
+  ],
+  "segments": [
+    {
+      "user_id": "demo-user-a",
+      "thread_id": "restart-a",
+      "process_id": 10204,
+      "model": "openai:gpt-5.6-luna",
+      "turns": [
+        {
+          "user_id": "demo-user-a",
+          "thread_id": "restart-a",
+          "status_profile": "normal",
+          "model": "openai:gpt-5.6-luna",
+          "user_message": "Please remember that I prefer replies in Kazakh. My issue is Wi-Fi. I enabled it and tried reconnecting, but it still fails.",
+          "events": [
+            {
+              "node": "load_user_memory",
+              "user_memory_loaded": {}
+            },
+            {
+              "node": "agent",
+              "model_tool_requests": [
+                {
+                  "tool": "save_user_preference",
+                  "args": {
+                    "key": "reply_language",
+                    "value": "Kazakh"
+                  }
+                }
+              ]
+            },
+            {
+              "node": "tools",
+              "tool_results": [
+                {
+                  "tool": "save_user_preference",
+                  "result": {
+                    "saved": true,
+                    "key": "reply_language",
+                    "value": "Kazakh"
+                  }
+                }
+              ]
+            },
+            {
+              "node": "agent",
+              "model_tool_requests": [
+                {
+                  "tool": "find_instructions",
+                  "args": {
+                    "topic": "wifi"
+                  }
+                },
+                {
+                  "tool": "check_service_status",
+                  "args": {
+                    "service": "wifi"
+                  }
+                }
+              ]
+            },
+            {
+              "node": "tools",
+              "tool_results": [
+                {
+                  "tool": "find_instructions",
+                  "result": {
+                    "found": true,
+                    "topic": "wifi",
+                    "instruction_id": "GUIDE-WIFI",
+                    "title": "Connect to the practice campus network",
+                    "steps": [
+                      "Check that Wi-Fi is enabled and airplane mode is off.",
+                      "Select the fictional Campus-Demo network.",
+                      "If connection fails, forget the saved network and try connecting again.",
+                      "If the problem remains, check the service status before preparing a ticket."
+                    ],
+                    "source": "data/helpdesk.json"
+                  }
+                },
+                {
+                  "tool": "check_service_status",
+                  "result": {
+                    "service": "wifi",
+                    "status": "operational",
+                    "message": "The demo Wi-Fi service has no reported outage.",
+                    "status_profile": "normal",
+                    "source": "data/service_status.json"
+                  }
+                }
+              ]
+            },
+            {
+              "node": "agent",
+              "model_answer": "Қазақ тіліндегі жауаптарды қалайтыныңызды есте сақтадым.\n\nWi‑Fi қызметі қазір жұмыс істеп тұр, яғни жалпы ақау тіркелмеген. Келесі қадамдарды орындап көріңіз:\n\n1. Ұшақ режимі өшірулі екенін тексеріңіз.\n2. **Campus-Demo** желісін таңдаңыз.\n3. Сақталған желіні өшіріп (*Forget network*), қайта қосылып көріңіз.\n\nЕгер мәселе шешілмесе, жергілікті тикет жобасын дайындай аламын. Ол үшін нақты қандай құрылғыда мәселе болғанын және жоғарыдағы қай қадамдарды орындағаныңызды жазыңыз."
+            }
+          ],
+          "information_sources": {
+            "conversation_state": {
+              "restored_messages_from_checkpoint": 0
+            },
+            "user_memory": {},
+            "user_memory_written": {
+              "reply_language": "Kazakh"
+            },
+            "reference_file": [
+              "data/helpdesk.json",
+              "data/service_status.json"
+            ]
+          },
+          "final_reply": "Қазақ тіліндегі жауаптарды қалайтыныңызды есте сақтадым.\n\nWi‑Fi қызметі қазір жұмыс істеп тұр, яғни жалпы ақау тіркелмеген. Келесі қадамдарды орындап көріңіз:\n\n1. Ұшақ режимі өшірулі екенін тексеріңіз.\n2. **Campus-Demo** желісін таңдаңыз.\n3. Сақталған желіні өшіріп (*Forget network*), қайта қосылып көріңіз.\n\nЕгер мәселе шешілмесе, жергілікті тикет жобасын дайындай аламын. Ол үшін нақты қандай құрылғыда мәселе болғанын және жоғарыдағы қай қадамдарды орындағаныңызды жазыңыз.",
+          "ticket_files": [],
+          "loop_limit_reached": false,
+          "pid": 10204
+        }
+      ]
+    },
+    {
+      "event": "restart_process (previous process ended; next run is a new process, same storage)"
+    },
+    {
+      "user_id": "demo-user-a",
+      "thread_id": "restart-a",
+      "process_id": 11660,
+      "model": "openai:gpt-5.6-luna",
+      "turns": [
+        {
+          "user_id": "demo-user-a",
+          "thread_id": "restart-a",
+          "status_profile": "normal",
+          "model": "openai:gpt-5.6-luna",
+          "user_message": "Which problem and steps did we discuss?",
+          "events": [
+            {
+              "node": "load_user_memory",
+              "user_memory_loaded": {
+                "reply_language": "Kazakh"
+              }
+            },
+            {
+              "node": "agent",
+              "model_answer": "Біз мына мәселені талқыладық:\n\n**Мәселе:** Wi‑Fi қосулы болса да, желіге қайта қосылу сәтсіз болып жатыр.\n\n**Орындалған қадам:** Wi‑Fi қосылды және қайта қосылуға әрекет жасадыңыз.\n\nМен ұсынған, бірақ сіз орындағаныңызды растамаған қадамдар:\n\n- Ұшақ режимінің өшірулі екенін тексеру;\n- **Campus-Demo** желісін таңдау;\n- Сақталған желіні ұмытып, қайта қосылу."
+            }
+          ],
+          "information_sources": {
+            "conversation_state": {
+              "restored_messages_from_checkpoint": 7
+            },
+            "user_memory": {
+              "reply_language": "Kazakh"
+            }
+          },
+          "final_reply": "Біз мына мәселені талқыладық:\n\n**Мәселе:** Wi‑Fi қосулы болса да, желіге қайта қосылу сәтсіз болып жатыр.\n\n**Орындалған қадам:** Wi‑Fi қосылды және қайта қосылуға әрекет жасадыңыз.\n\nМен ұсынған, бірақ сіз орындағаныңызды растамаған қадамдар:\n\n- Ұшақ режимінің өшірулі екенін тексеру;\n- **Campus-Demo** желісін таңдау;\n- Сақталған желіні ұмытып, қайта қосылу.",
+          "ticket_files": [],
+          "loop_limit_reached": false,
+          "pid": 11660
+        }
+      ]
+    }
+  ],
+  "final_reply": "Біз мына мәселені талқыладық:\n\n**Мәселе:** Wi‑Fi қосулы болса да, желіге қайта қосылу сәтсіз болып жатыр.\n\n**Орындалған қадам:** Wi‑Fi қосылды және қайта қосылуға әрекет жасадыңыз.\n\nМен ұсынған, бірақ сіз орындағаныңызды растамаған қадамдар:\n\n- Ұшақ режимінің өшірулі екенін тексеру;\n- **Campus-Demo** желісін таңдау;\n- Сақталған желіні ұмытып, қайта қосылу.",
+  "ticket_files": [],
+  "loop_limit_reached": false
+}

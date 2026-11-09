@@ -1,0 +1,15 @@
+{
+  "ticket_id": "TCK-20261109-065121-6d1c35",
+  "status": "draft",
+  "user_id": "demo-user-a",
+  "thread_id": "s09",
+  "category": "Wi-Fi",
+  "summary": "Unable to connect to Wi-Fi after enabling it and trying to reconnect.",
+  "steps_tried": [
+    "Enabled Wi-Fi.",
+    "Tried reconnecting."
+  ],
+  "service_status": "operational",
+  "status_profile": "normal",
+  "reference_ids": []
+}

@@ -1,0 +1,156 @@
+{
+  "scenario": "S13",
+  "title": "Do not share memory between users",
+  "part": 3,
+  "status_profile": "normal",
+  "reset_before": true,
+  "commands": [
+    "python -m helpdesk.cli --user demo-user-a --thread isolation-a --profile normal --message \"Please remember that I prefer replies in Kazakh. I have a Wi-Fi problem.\"",
+    "python -m helpdesk.cli --user demo-user-b --thread isolation-b --profile normal --message \"Have I told you a preferred language or a previous problem?\""
+  ],
+  "segments": [
+    {
+      "user_id": "demo-user-a",
+      "thread_id": "isolation-a",
+      "process_id": 25124,
+      "model": "openai:gpt-5.6-luna",
+      "turns": [
+        {
+          "user_id": "demo-user-a",
+          "thread_id": "isolation-a",
+          "status_profile": "normal",
+          "model": "openai:gpt-5.6-luna",
+          "user_message": "Please remember that I prefer replies in Kazakh. I have a Wi-Fi problem.",
+          "events": [
+            {
+              "node": "load_user_memory",
+              "user_memory_loaded": {}
+            },
+            {
+              "node": "agent",
+              "model_tool_requests": [
+                {
+                  "tool": "save_user_preference",
+                  "args": {
+                    "key": "reply_language",
+                    "value": "Kazakh"
+                  }
+                },
+                {
+                  "tool": "find_instructions",
+                  "args": {
+                    "topic": "wifi"
+                  }
+                },
+                {
+                  "tool": "check_service_status",
+                  "args": {
+                    "service": "wifi"
+                  }
+                }
+              ]
+            },
+            {
+              "node": "tools",
+              "tool_results": [
+                {
+                  "tool": "save_user_preference",
+                  "result": {
+                    "saved": true,
+                    "key": "reply_language",
+                    "value": "Kazakh"
+                  }
+                },
+                {
+                  "tool": "find_instructions",
+                  "result": {
+                    "found": true,
+                    "topic": "wifi",
+                    "instruction_id": "GUIDE-WIFI",
+                    "title": "Connect to the practice campus network",
+                    "steps": [
+                      "Check that Wi-Fi is enabled and airplane mode is off.",
+                      "Select the fictional Campus-Demo network.",
+                      "If connection fails, forget the saved network and try connecting again.",
+                      "If the problem remains, check the service status before preparing a ticket."
+                    ],
+                    "source": "data/helpdesk.json"
+                  }
+                },
+                {
+                  "tool": "check_service_status",
+                  "result": {
+                    "service": "wifi",
+                    "status": "operational",
+                    "message": "The demo Wi-Fi service has no reported outage.",
+                    "status_profile": "normal",
+                    "source": "data/service_status.json"
+                  }
+                }
+              ]
+            },
+            {
+              "node": "agent",
+              "model_answer": "Жауаптарды қазақ тілінде беруді есте сақтадым.\n\nWi‑Fi қызметінде белгілі ақау жоқ. Мына қадамдарды орындап көріңіз:\n\n1. Wi‑Fi қосулы, ал ұшақ режимі өшірулі екенін тексеріңіз.\n2. **Campus-Demo** желісін таңдаңыз.\n3. Қосылмаса, сақталған желіні ұмытып, қайта қосылып көріңіз.\n\nМәселе шешілмесе, қандай қате пайда болғанын және осы қадамдардың қайсысын орындағаныңызды жазыңыз — жергілікті қолдау билеті жобасын дайындауға көмектесемін."
+            }
+          ],
+          "information_sources": {
+            "conversation_state": {
+              "restored_messages_from_checkpoint": 0
+            },
+            "user_memory": {},
+            "user_memory_written": {
+              "reply_language": "Kazakh"
+            },
+            "reference_file": [
+              "data/helpdesk.json",
+              "data/service_status.json"
+            ]
+          },
+          "final_reply": "Жауаптарды қазақ тілінде беруді есте сақтадым.\n\nWi‑Fi қызметінде белгілі ақау жоқ. Мына қадамдарды орындап көріңіз:\n\n1. Wi‑Fi қосулы, ал ұшақ режимі өшірулі екенін тексеріңіз.\n2. **Campus-Demo** желісін таңдаңыз.\n3. Қосылмаса, сақталған желіні ұмытып, қайта қосылып көріңіз.\n\nМәселе шешілмесе, қандай қате пайда болғанын және осы қадамдардың қайсысын орындағаныңызды жазыңыз — жергілікті қолдау билеті жобасын дайындауға көмектесемін.",
+          "ticket_files": [],
+          "loop_limit_reached": false,
+          "pid": 25124
+        }
+      ]
+    },
+    {
+      "user_id": "demo-user-b",
+      "thread_id": "isolation-b",
+      "process_id": 1812,
+      "model": "openai:gpt-5.6-luna",
+      "turns": [
+        {
+          "user_id": "demo-user-b",
+          "thread_id": "isolation-b",
+          "status_profile": "normal",
+          "model": "openai:gpt-5.6-luna",
+          "user_message": "Have I told you a preferred language or a previous problem?",
+          "events": [
+            {
+              "node": "load_user_memory",
+              "user_memory_loaded": {}
+            },
+            {
+              "node": "agent",
+              "model_answer": "No. I don’t have a saved preferred language or any record of a previous problem from you."
+            }
+          ],
+          "information_sources": {
+            "conversation_state": {
+              "restored_messages_from_checkpoint": 0
+            },
+            "user_memory": {}
+          },
+          "final_reply": "No. I don’t have a saved preferred language or any record of a previous problem from you.",
+          "ticket_files": [],
+          "loop_limit_reached": false,
+          "pid": 1812
+        }
+      ]
+    }
+  ],
+  "final_reply": "No. I don’t have a saved preferred language or any record of a previous problem from you.",
+  "ticket_files": [],
+  "loop_limit_reached": false
+}

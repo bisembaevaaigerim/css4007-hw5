@@ -182,27 +182,47 @@ All runs below used the real model `gpt-5.6-luna` (OpenAI). Storage was deleted 
 
 ## Part 4 — Running and checking my work
 
-TODO: point to the README setup steps, package versions, memory-reset instructions, tests and GitHub Actions workflow. Explain which mistake each test catches and which runs use a fake model.
+* Setup, run commands, Python version (3.11.9), model setup, memory location and reset steps are in `README.md`. Package versions are pinned in `requirements.txt`.
+* CI: `.github/workflows/tests.yml` runs `python -m pytest -q` on every push, on Python 3.11 and without an API key. My first CI run failed because I had a colon followed by a space inside a step name, which is invalid YAML. I fixed the name and the next run passed.
+* The tests use the scripted fake model (`helpdesk/fake_model.py`, clearly labelled, not an LLM). The real-model runs (Part 2 and Part 3, and `runner --all --model real`) are separate and are not part of CI.
+* 27 tests. What each group would catch if the code broke:
+
+| Test file | Catches |
+| --- | --- |
+| `test_part1_routing.py` | Wrong rule order, case-sensitive matching, state fields set by the wrong node, `clarify_problem` not wired in, simple routes broken by the change. |
+| `test_tools.py` | Wrong guide returned, invented instructions, ignoring the status snapshot, Wi-Fi checked for a password problem, missing data treated as "operational", ticket not saved or marked as sent, ticket made with missing details. |
+| `test_agent_and_memory.py` | Ticket made no matter the status, invented steps in a ticket, ticket before details are known, endless tool loop, no memory inside a thread, memory kept only in RAM (including a real two-process test), preference tied to one thread, memory shared between users or threads. |
 
 ## Choices and limitations
 
-TODO: explain the storage and libraries I chose, why they fit this task, and what still does not work reliably.
+* **Storage.** I used LangGraph's `SqliteSaver` for conversation state, because it is the supplied local option and it survives restarts. For user memory I used a small SQLite table (`user_id`, `key`, `value`). It is easy to read and to reset, and only one preference is needed. Only the key `reply_language` is accepted, so passwords or keys cannot be saved.
+* **Libraries.** LangGraph for the graphs, `langchain-core` for tools and messages, `langchain-openai` for the real model, `python-dotenv` for `.env`, pytest for tests.
+* **Model.** `gpt-5.6-luna` from OpenAI, with `reasoning_effort="none"`. With reasoning on, the API refused function tools on the chat completions endpoint.
+* **What does not work reliably.**
+  * The real model is not deterministic. My saved logs show one run, and another run may word things differently or call tools in another order.
+  * The real model sometimes calls tools I did not ask for. For example, in S07, S10, S11, S12 and S13 it also looked up instructions or checked the status, and in S09 it checked the status before making the ticket. It did not break any rule, but it is more active than the fake model.
+  * Part 1 uses plain keyword matching, so "I do not have a wifi problem" still goes to the Wi-Fi node.
+  * The service status is a fixed snapshot chosen by the runner. It is not live.
+  * The scripted fake model only understands the phrases of the supplied scenarios.
+  * I tested only one provider.
 
 ## Supplied scenarios — my actual results
 
-| Scenario | Command or manual steps | Log file | What happened / what I changed |
+All scenarios were run with `python -m helpdesk.runner --all --model real` (Part 1 scenarios use no model). Each log records the exact commands (`commands`), the process ids, the model used, the nodes, the tool requests and results, the information sources and the final reply. One scenario can be run again with `python -m helpdesk.runner --scenario S06 --model real`.
+
+| Scenario | Command or manual steps | Log file | What happened / what I would change |
 | --- | --- | --- | --- |
-| S01 — Simple Wi-Fi route | | | |
-| S02 — Case-insensitive password route | | | |
-| S03 — Unsupported request | | | |
-| S04 — Two topics before the graph change | | | |
-| S05 — Two topics after adding clarification | | | |
-| S06 — Instructions then local ticket | | | |
-| S07 — The same request during a Wi-Fi outage | | | |
-| S08 — Status source unavailable | | | |
-| S09 — Missing ticket details | | | |
-| S10 — Use the current conversation | | | |
-| S11 — Persist and recall after restart | | | |
-| S12 — Preference across threads without replay | | | |
-| S13 — Do not share memory between users | | | |
-| S14 — Password recovery outage | | | |
+| S01 — Simple Wi-Fi route | `python -m helpdesk.part1 --message "I cannot connect to Wi-Fi."` | `outputs/S01.json` | read_request → wifi_help. Wi-Fi guide returned. Nothing to change. |
+| S02 — Case-insensitive password route | `python -m helpdesk.part1 --message "I forgot my PASSWORD."` | `outputs/S02.json` | read_request → password_help. Case did not matter. If it had failed, I would lower-case the message before matching. |
+| S03 — Unsupported request | `python -m helpdesk.part1 --message "My laptop screen is broken."` | `outputs/S03.json` | read_request → other_help. It asks whether the problem is Wi-Fi or a password. |
+| S04 — Two topics before the graph change | `python -m helpdesk.part1 --message "My Wi-Fi password does not work."` | `outputs/S04.json` | Original graph: read_request → wifi_help. The Wi-Fi rule is checked first, so the password part is ignored. This is the weakness I fixed in S05. |
+| S05 — Two topics after adding clarification | same message with `--variant with_clarification` | `outputs/S05.json` | Changed graph: read_request → clarify_problem. I added the category `both`, the node `clarify_problem` and a new branch in `choose_next`. |
+| S06 — Instructions then local ticket | `python -m helpdesk.cli --user demo-user-a --thread s06 --profile normal --model real --message ... --message ...` | `outputs/S06.json` | Message 1: find_instructions. Message 2 (4 messages restored): check_service_status (operational) → prepare_ticket. Draft `TCK-20261109-065055-8b8c95.json`, nothing sent. |
+| S07 — The same request during a Wi-Fi outage | same request, `--thread s07 --profile wifi_outage` | `outputs/S07.json` | check_service_status returned `outage`. No ticket, and no repair time was invented. The model also called find_instructions, which was not needed. |
+| S08 — Status source unavailable | `--thread s08 --profile status_unavailable` | `outputs/S08.json` | Status `unknown`. The model did not claim Wi-Fi is operating and made no ticket. It asked whether I want a draft. |
+| S09 — Missing ticket details | `--thread s09 --message "Prepare a support ticket." --message "The issue is Wi-Fi. ..."` | `outputs/S09.json` | Message 1: no tools, it asked for the problem and the steps. Message 2: it called check_service_status, find_instructions and prepare_ticket. Draft `TCK-20261109-065121-6d1c35.json`. If the model had made a ticket in message 1, I would make the prompt stricter. |
+| S10 — Use the current conversation | `--thread s10 --message ... --message "Which steps did I already try?"` | `outputs/S10.json` | Message 2 restored 5 messages from the checkpoint and listed enabling Wi-Fi, forgetting the network and reconnecting. |
+| S11 — Persist and recall after restart | two `helpdesk.cli` processes with thread `restart-a` | `outputs/S11.json` | Process ids 10204 and 11660. The second process restored 7 messages and loaded `reply_language: Kazakh`. It answered in Kazakh about the Wi-Fi problem and the steps. |
+| S12 — Preference across threads without replay | threads `preference-a1` and `preference-a2`, with a restart | `outputs/S12.json` | The new thread restored 0 messages, but user memory had `Kazakh`. It answered in Kazakh. |
+| S13 — Do not share memory between users | `demo-user-a` / `isolation-a`, then `demo-user-b` / `isolation-b` | `outputs/S13.json` | User B had empty memory and 0 restored messages. It said that no preference or previous problem is recorded. |
+| S14 — Password recovery outage | `--thread s14 --profile recovery_outage --message "My password recovery page is unavailable. ..."` | `outputs/S14.json` | check_service_status for the account-recovery service returned `outage`. No repair time was invented. |
