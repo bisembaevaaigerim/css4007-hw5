@@ -1,0 +1,34 @@
+{
+  "graph_variant": "original",
+  "message": "My Wi-Fi password does not work.",
+  "nodes_visited": [
+    "START",
+    "read_request",
+    "wifi_help",
+    "END"
+  ],
+  "steps": [
+    {
+      "node": "read_request",
+      "update": {
+        "category": "wifi"
+      },
+      "state_after": {
+        "message": "My Wi-Fi password does not work.",
+        "category": "wifi"
+      }
+    },
+    {
+      "node": "wifi_help",
+      "update": {
+        "reply": "[GUIDE-WIFI] Connect to the practice campus network\n  1. Check that Wi-Fi is enabled and airplane mode is off.\n  2. Select the fictional Campus-Demo network.\n  3. If connection fails, forget the saved network and try connecting again.\n  4. If the problem remains, check the service status before preparing a ticket."
+      },
+      "state_after": {
+        "message": "My Wi-Fi password does not work.",
+        "category": "wifi",
+        "reply": "[GUIDE-WIFI] Connect to the practice campus network\n  1. Check that Wi-Fi is enabled and airplane mode is off.\n  2. Select the fictional Campus-Demo network.\n  3. If connection fails, forget the saved network and try connecting again.\n  4. If the problem remains, check the service status before preparing a ticket."
+      }
+    }
+  ],
+  "final_reply": "[GUIDE-WIFI] Connect to the practice campus network\n  1. Check that Wi-Fi is enabled and airplane mode is off.\n  2. Select the fictional Campus-Demo network.\n  3. If connection fails, forget the saved network and try connecting again.\n  4. If the problem remains, check the service status before preparing a ticket."
+}
